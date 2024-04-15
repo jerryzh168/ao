@@ -1176,22 +1176,22 @@ class TestSaveLoadMeta(unittest.TestCase):
         assert SQNR(ref_f, ref_q) > min_sqnr
 
         # load model structure
-        with torch.device('meta'):
+        with torch.device("meta"):
             model = test_model()
         api(model)
 
         # load quantized state_dict
-        state_dict = torch.load("test.pth", mmap=True)
+        state_dict = torch.load("test.pth", mmap=True, map_location="cpu")
         os.remove("test.pth")
         model.load_state_dict(state_dict, assign=True)
         model = model.to(device=test_device, dtype=test_dtype).eval()
 
         # get quantized reference
         model_qc = torch.compile(model, mode="max-autotune")
-        test = model_qc(x).detach()
+        compiled = model_qc(x).detach()
 
-        assert SQNR(ref_f, test) > min_sqnr
-        self.assertTrue(torch.equal(ref_q, test))
+        assert SQNR(ref_f, compiled) > min_sqnr
+        self.assertTrue(torch.equal(ref_q, compiled))
 
     @parameterized.expand(COMMON_DEVICE_DTYPE)
     @torch.no_grad()
