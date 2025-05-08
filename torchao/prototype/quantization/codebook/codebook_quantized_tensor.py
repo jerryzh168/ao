@@ -116,6 +116,9 @@ class CodebookQuantizedTensor(TorchAOBaseTensor):
             self.dtype,
         ]
 
+    def _is_view(self):
+        return False
+
     @classmethod
     def __tensor_unflatten__(
         cls, tensor_data_dict, tensor_attributes, outer_size, outer_stride
