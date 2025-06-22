@@ -48,6 +48,7 @@ from torchao.dtypes import (
     to_affine_quantized_intx,
     to_fbgemm_fp8,
     to_fbgemm_int4,
+    to_int4_groupwise_preshuffle,
     to_marlinqqq_quantized_intx,
 )
 from torchao.dtypes.uintx.packed_linear_int8_dynamic_activation_intx_weight_layout import (
@@ -2000,6 +2001,7 @@ class FbgemmConfig(AOBaseConfig):
     block_size: Optional[List[int]] = None
     activation_scale_ub: Optional[float] = None
     transpose_input: bool = False
+    preshuffle: bool = False
 
 
 @register_quantize_module_handler(FbgemmConfig)
@@ -2024,11 +2026,14 @@ def _(module: torch.nn.Module, config: FbgemmConfig) -> torch.nn.Module:
         and (config.weight_dtype == torch.int4)
         and (config.output_dtype == torch.bfloat16)
     ):
-        weight = to_fbgemm_int4(
-            module.weight,
-            config.block_size,
-            config.transpose_input,
-        )
+        if config.preshuffle:
+            weight = to_int4_groupwise_preshuffle(module.weight, config.block_size)
+        else:
+            weight = to_fbgemm_int4(
+                module.weight,
+                config.block_size,
+                config.transpose_input,
+            )
         module.weight = torch.nn.Parameter(weight, requires_grad=False)
         module.extra_repr = types.MethodType(_linear_extra_repr, module)
         return module
